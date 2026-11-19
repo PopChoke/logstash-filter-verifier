@@ -30,7 +30,11 @@ func makeSetupCmd() *cobra.Command {
 	cmd.Flags().String("os-arch", osArch(), "os and arch string for the Logstash version to be downloaded, e.g. linux-x86_64")
 	_ = viper.BindPFlag("os-arch", cmd.Flags().Lookup("os-arch"))
 
-	cmd.Flags().String("archive-type", "tar.gz", "archive type to be downloaded, e.g. tar.gz or zip")
+	defaultArchiveType := "tar.gz"
+	if runtime.GOOS == "windows" {
+		defaultArchiveType = "zip"
+	}
+	cmd.Flags().String("archive-type", defaultArchiveType, "archive type to be downloaded, e.g. tar.gz or zip")
 	_ = viper.BindPFlag("archive-type", cmd.Flags().Lookup("archive-type"))
 
 	return cmd

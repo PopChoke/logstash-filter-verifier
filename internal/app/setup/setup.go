@@ -116,8 +116,11 @@ func download(filename string, targetFile string) error {
 		return errors.Wrap(err, "failed to download Logstash release")
 	}
 	defer res.Body.Close()
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return fmt.Errorf("failed to download Logstash release: HTTP %s", res.Status)
+	}
 
-	file, err := os.OpenFile(targetFile, os.O_RDWR|os.O_CREATE, 0644)
+	file, err := os.OpenFile(targetFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return errors.Wrap(err, "failed to open target file for downloaded Logstash archive")
 	}

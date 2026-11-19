@@ -22,7 +22,7 @@ func makeStandaloneCmd() *cobra.Command {
 	}
 
 	// TODO: This flag makes sense with daemon mode test command as well.
-	cmd.Flags().String("diff-command", "diff -u", "Set the command to run to compare two events. The command will receive the two files to compare as arguments.")
+	cmd.Flags().String("diff-command", "", "Optional external command for text diffs. The command receives the expected and actual JSON files as arguments.")
 	_ = viper.BindPFlag("diff-command", cmd.Flags().Lookup("diff-command"))
 
 	// TODO: Move default values to some sort of global lookup like defaultKeptEnvVars.
@@ -56,6 +56,11 @@ func makeStandaloneCmd() *cobra.Command {
 	cmd.Flags().Bool("quiet", false, "Omit test progress messages and event diffs.")
 	_ = viper.BindPFlag("quiet", cmd.Flags().Lookup("quiet"))
 
+	cmd.Flags().String("report-format", "", "Write a machine-readable report (json or junit).")
+	_ = viper.BindPFlag("report-format", cmd.Flags().Lookup("report-format"))
+	cmd.Flags().String("report-file", "", "Report file path. Defaults to stdout.")
+	_ = viper.BindPFlag("report-file", cmd.Flags().Lookup("report-file"))
+
 	return cmd
 }
 
@@ -73,6 +78,8 @@ func runStandalone(_ *cobra.Command, args []string) error {
 		viper.GetBool("sockets"),
 		viper.GetDuration("sockets-timeout"),
 		viper.Get("logger").(logging.Logger),
+		viper.GetString("report-format"),
+		viper.GetString("report-file"),
 	)
 
 	return s.Run()

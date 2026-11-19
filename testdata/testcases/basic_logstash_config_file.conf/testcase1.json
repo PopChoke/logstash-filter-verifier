@@ -4,7 +4,8 @@
   },
   "ignore": [
     "@timestamp",
-    "event"
+    "event",
+    "host"
   ],
   "input_plugin": "stdin",
   "testcases": [

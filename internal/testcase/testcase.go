@@ -19,6 +19,7 @@ import (
 	"github.com/imkira/go-observer"
 	"github.com/mikefarah/yaml/v2"
 
+	lfvcomparison "github.com/magnusbaeck/logstash-filter-verifier/v2/internal/comparison"
 	"github.com/magnusbaeck/logstash-filter-verifier/v2/internal/logging"
 	"github.com/magnusbaeck/logstash-filter-verifier/v2/internal/logstash"
 	lfvobserver "github.com/magnusbaeck/logstash-filter-verifier/v2/internal/observer"
@@ -299,6 +300,12 @@ func (tcs *TestCaseSet) Compare(events []logstash.Event, diffCommand []string, l
 			Explain:    fmt.Sprintf("Expected %d event(s), got %d instead.\nReceived events: %s", len(tcs.ExpectedEvents), len(events), string(eventsJSON)),
 			Path:       filepath.Base(tcs.File),
 			EventIndex: 0,
+			Diffs: []lfvcomparison.FieldDiff{{
+				Kind:     lfvcomparison.EventCountMismatch,
+				Path:     "$",
+				Expected: len(tcs.ExpectedEvents),
+				Actual:   len(events),
+			}},
 		}
 		liveProducer.Update(comparisonResult)
 		return false, nil
@@ -343,6 +350,27 @@ func (tcs *TestCaseSet) Compare(events []logstash.Event, diffCommand []string, l
 		// Ignored fields can be in a sub object
 		for _, ignored := range tcs.IgnoredFields {
 			removeFields(ignored, actualEvent)
+		}
+
+		useStructuredComparison := len(diffCommand) == 0
+		if len(diffCommand) == 1 && diffCommand[0] == "diff" {
+			if _, err := exec.LookPath("diff"); err != nil {
+				useStructuredComparison = true
+			}
+		}
+		if useStructuredComparison {
+			diffs := lfvcomparison.Compare(tcs.ExpectedEvents[i], actualEvent)
+			comparisonResult.Status = len(diffs) == 0
+			comparisonResult.Diffs = diffs
+			comparisonResult.Explain = lfvcomparison.Format(diffs)
+			if comparisonResult.Status {
+				comparisonResult.Explain = "Events match"
+			}
+			if !comparisonResult.Status {
+				status = false
+			}
+			liveProducer.Update(comparisonResult)
+			continue
 		}
 
 		// Create a directory structure for the JSON file being

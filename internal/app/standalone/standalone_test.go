@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"testing"
 
 	"github.com/magnusbaeck/logstash-filter-verifier/v2/internal/testhelpers"
@@ -103,6 +104,10 @@ func TestFindExecutable(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
+		// Unix executable-bit semantics don't exist on Windows.
+		if runtime.GOOS == "windows" && (i == 3 || i == 6) {
+			continue
+		}
 		tempdir := t.TempDir()
 
 		for _, fwp := range c.files {

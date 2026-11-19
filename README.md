@@ -242,9 +242,19 @@ obviously):
 
 If the test is successful, Logstash Filter Verifier will terminate
 with a zero exit code and (almost) no output. If the test fails it'll
-run `diff -u` (or some other command if you use the `--diff-command`
-flag) to compare the pretty-printed JSON representation of the
-expected and actual events.
+show structured JSON field diffs with field paths, expected values, and
+actual values. To keep using an external text diff instead, pass
+`--diff-command`; for example `--diff-command "diff -u"`.
+
+Machine-readable reports can be emitted for CI:
+
+    logstash-filter-verifier standalone \
+      --report-format=json \
+      --report-file=result.json \
+      path/to/syslog.yaml path/to/filters
+
+Supported report formats are `json` and `junit`. If `--report-file` is omitted,
+the report is written to stdout.
 
 The actual event emitted by Logstash will contain a `@version` field,
 but since that field isn't interesting it's ignored by default when
@@ -643,9 +653,8 @@ are a couple of known quirks that are easy to work around:
 
 * It won't guess the location of your Logstash executable so you'll have
   to manually provide it with the `--logstash-path` flag.
-* The default value of the `--diff-command` is `diff -u` which won't work
-  on typical Windows machines. You'll have to explicitly select which diff
-  tool to use.
+* Structured field diffs are used by default and do not require an external
+  diff tool. The `--diff-command` option is opt-in.
 
 
 ### Plugin ID (Daemon mode)

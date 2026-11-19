@@ -1,5 +1,7 @@
 package observer
 
+import "github.com/magnusbaeck/logstash-filter-verifier/v2/internal/comparison"
+
 // TestExecutionStart is empty struct to inform consumer that test execution has begun.
 type TestExecutionStart struct{}
 
@@ -13,6 +15,7 @@ type ComparisonResult struct {
 	Explain    string
 	Path       string
 	EventIndex int
+	Diffs      []comparison.FieldDiff
 }
 
 // Interface defines the methods of an observer.

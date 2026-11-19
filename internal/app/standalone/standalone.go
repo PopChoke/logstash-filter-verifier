@@ -43,6 +43,8 @@ type Standalone struct {
 	configPaths           []string
 	unixSockets           bool
 	unixSocketCommTimeout time.Duration
+	reportFormat          string
+	reportFile            string
 
 	log logging.Logger
 }
@@ -60,8 +62,9 @@ func New(
 	unixSockets bool,
 	unixSocketCommTimeout time.Duration,
 	log logging.Logger,
+	reportArgs ...string,
 ) Standalone {
-	return Standalone{
+	s := Standalone{
 		quiet:                 quiet,
 		diffCommand:           diffCommand,
 		testcasePath:          testcasePath,
@@ -75,16 +78,30 @@ func New(
 		unixSocketCommTimeout: unixSocketCommTimeout,
 		log:                   log,
 	}
+	if len(reportArgs) >= 1 {
+		s.reportFormat = reportArgs[0]
+	}
+	if len(reportArgs) >= 2 {
+		s.reportFile = reportArgs[1]
+	}
+	return s
 }
 
 func (s Standalone) Run() error {
 	var status bool
+
+	if s.reportFormat != "" && s.reportFormat != "json" && s.reportFormat != "junit" {
+		return fmt.Errorf("unsupported report format %q: expected json or junit", s.reportFormat)
+	}
 
 	// Set up observers
 	observers := make([]lfvobserver.Interface, 0)
 	liveObserver := observer.NewProperty(lfvobserver.TestExecutionStart{})
 	if !s.quiet {
 		observers = append(observers, lfvobserver.NewSummaryObserver(liveObserver))
+	}
+	if s.reportFormat != "" {
+		observers = append(observers, lfvobserver.NewReportObserver(liveObserver, s.reportFormat, s.reportFile))
 	}
 	for _, obs := range observers {
 		if err := obs.Start(); err != nil {

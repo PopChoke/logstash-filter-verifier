@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"sync"
-	"syscall"
 
 	"github.com/hpcloud/tail"
 	"github.com/pkg/errors"
@@ -91,7 +90,7 @@ func (i *instance) Start(ctx context.Context, controller *controller.Controller,
 	}
 	// Ensure a separate process group id for the Logstash child process, such
 	// that signals like interrupt are not propagated automatically.
-	i.child.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	i.child.SysProcAttr = processSysProcAttr()
 
 	i.logstashShutdownWG.Add(2)
 	go i.stdoutProcessor(stdout)
@@ -135,7 +134,7 @@ func (i *instance) stopLogstash() {
 		return
 	}
 
-	err := i.child.Process.Signal(syscall.SIGTERM)
+	err := stopProcess(i.child.Process)
 	if err != nil {
 		i.log.Errorf("failed to send SIGTERM, Logstash might already be down:", err)
 	}
@@ -151,7 +150,7 @@ func (i *instance) ConfigReload() error {
 		return errors.New("can't signal to an unborn process")
 	}
 
-	err := i.child.Process.Signal(syscall.SIGHUP)
+	err := reloadProcess(i.child.Process)
 	if err != nil {
 		return errors.Wrap(err, "failed to send SIGHUP")
 	}

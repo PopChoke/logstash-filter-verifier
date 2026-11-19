@@ -7,3 +7,4 @@
 *.coverprofile
 *.swp
 logstash-filter-verifier.yml
+*.exe
